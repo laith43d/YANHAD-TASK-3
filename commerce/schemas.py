@@ -4,8 +4,6 @@ from ninja import Schema
 from pydantic import UUID4
 
 
-class MessageOut(Schema):
-    detail: str
 
 class HumanQualities(Schema):
     age: int
@@ -65,3 +63,9 @@ class ProductCreate(Schema):
     vendor_id: UUID4
     merchant_id: UUID4
     label_id: UUID4
+
+
+class AddToCartPayload(Schema):
+    product_id: UUID4
+    qty: int
+

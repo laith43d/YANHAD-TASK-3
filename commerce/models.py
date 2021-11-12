@@ -4,16 +4,14 @@ from PIL import Image
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from config.utils.models import Entity
+
 User = get_user_model()
 
 
-class Entity(models.Model):
-    class Meta:
-        abstract = True
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created = models.DateTimeField(editable=False, auto_now_add=True)
-    updated = models.DateTimeField(editable=False, auto_now=True)
+class ProductManager(models.Manager):
+    def select(self):
+        return self.get_queryset().select_related('vendor', 'category', 'label', 'merchant')
 
 
 class Product(Entity):
@@ -46,6 +44,8 @@ class Product(Entity):
     def __str__(self):
         return self.name
 
+    objects = ProductManager()
+
 
 class Order(Entity):
     user = models.ForeignKey(User, verbose_name='user', related_name='orders', null=True, blank=True,
@@ -66,7 +66,7 @@ class Order(Entity):
     @property
     def order_total(self):
         order_total = sum(
-            i.product.price_discounted * i.item_qty for i in self.items.all()
+            i.product.discounted_price * i.item_qty for i in self.items.all()
         )
 
         return order_total
@@ -84,7 +84,7 @@ class Item(Entity):
     ordered = models.BooleanField('ordered')
 
     def __str__(self):
-        return f''
+        return self.product.name
 
 
 class OrderStatus(Entity):
@@ -161,6 +161,7 @@ class ProductImage(Entity):
             img.save(self.image.path)
             # print(self.image.path)
 
+
 class Label(Entity):
     name = models.CharField('name', max_length=255)
 
@@ -170,6 +171,7 @@ class Label(Entity):
 
     def __str__(self):
         return self.name
+
 
 class Vendor(Entity):
     name = models.CharField('name', max_length=255)
@@ -190,11 +192,13 @@ class Vendor(Entity):
             img.save(self.image.path)
             # print(self.image.path)
 
+
 class City(Entity):
     name = models.CharField('city', max_length=255)
 
     def __str__(self):
         return self.name
+
 
 class Address(Entity):
     user = models.ForeignKey(User, verbose_name='user', related_name='address',
