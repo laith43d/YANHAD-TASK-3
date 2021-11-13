@@ -1,6 +1,7 @@
 from typing import List
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from pydantic import UUID4
@@ -43,9 +44,20 @@ order_controller = Router(tags=['order'])
 @commerce_controller.get('products', response={
     200: List[ProductOut],
 })
-def list_products(request):
+def list_products(request, q: str = None, price_lte: int = None, price_gte: int = None):
     products = Product.objects.all()
-    # products = products.filter(name='tshirt')
+
+    if q:
+        products = products.filter(
+            Q(name__icontains=q) | Q(description__icontains=q)
+        )
+
+    if price_lte:
+        products = products.filter(discounted_price__lte=price_lte)
+
+    if price_gte:
+        products = products.filter(discounted_price__gte=price_gte)
+
     return products
 
 
@@ -78,9 +90,6 @@ def create_product(request, payload: ProductCreate):
 # def delete_product(request):
 #     pass
 
-
-# bonus task
-# create all crud operations for Label, Merchant, Vendor, Category
 
 
 @order_controller.post('add-to-cart', response=MessageOut)
