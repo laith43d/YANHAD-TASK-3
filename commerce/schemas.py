@@ -64,8 +64,45 @@ class ProductCreate(Schema):
     merchant_id: UUID4
     label_id: UUID4
 
+class ProductUpdate(Schema):
+    id: UUID4
+    is_featured: bool
+    name: str
+    description: str
+    qty: int
+    price: int
+    discounted_price: int
+    category_id: UUID4
+    vendor_id: UUID4
+    merchant_id: UUID4
+    label_id: UUID4
+    created: datetime.datetime
+    updated: datetime.datetime
 
 class AddToCartPayload(Schema):
     product_id: UUID4
     qty: int
 
+class City(Schema):
+    name: str
+
+class AddressOut(Schema):
+    id: UUID4
+    work_address: bool
+    address1: str
+    address2: str
+    city: City
+    phone: str
+
+
+class AddressIn(Schema):
+    work_address: bool
+    address1: str
+    address2: str
+    city_id: UUID4
+    phone: str
+
+class CheckOutIn(Schema):
+    note: str=None
+    address_id:UUID4
+    status_id: UUID4

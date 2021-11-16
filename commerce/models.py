@@ -54,7 +54,7 @@ class Order(Entity):
                                 on_delete=models.CASCADE)
     total = models.DecimalField('total', blank=True, null=True, max_digits=1000, decimal_places=0)
     status = models.ForeignKey('commerce.OrderStatus', verbose_name='status', related_name='orders',
-                               on_delete=models.CASCADE)
+                               on_delete=models.CASCADE,null=True)
     note = models.CharField('note', null=True, blank=True, max_length=255)
     ref_code = models.CharField('ref code', max_length=255)
     ordered = models.BooleanField('ordered')
@@ -203,9 +203,9 @@ class City(Entity):
 class Address(Entity):
     user = models.ForeignKey(User, verbose_name='user', related_name='address',
                              on_delete=models.CASCADE)
-    work_address = models.BooleanField('work address', null=True, blank=True)
+    work_address = models.BooleanField('work address', null=True, blank=False)
     address1 = models.CharField('address1', max_length=255)
-    address2 = models.CharField('address2', null=True, blank=True, max_length=255)
+    address2 = models.CharField('address2', null=True, blank=False, max_length=255)
     city = models.ForeignKey('City', related_name='addresses', on_delete=models.CASCADE)
     phone = models.CharField('phone', max_length=255)
 
