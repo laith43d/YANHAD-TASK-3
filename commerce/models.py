@@ -4,14 +4,16 @@ from PIL import Image
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from config.utils.models import Entity
-
 User = get_user_model()
 
 
-class ProductManager(models.Manager):
-    def select(self):
-        return self.get_queryset().select_related('vendor', 'category', 'label', 'merchant')
+class Entity(models.Model):
+    class Meta:
+        abstract = True
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created = models.DateTimeField(editable=False, auto_now_add=True)
+    updated = models.DateTimeField(editable=False, auto_now=True)
 
 
 class Product(Entity):
@@ -43,8 +45,6 @@ class Product(Entity):
 
     def __str__(self):
         return self.name
-
-    objects = ProductManager()
 
 
 class Order(Entity):
@@ -161,7 +161,6 @@ class ProductImage(Entity):
             img.save(self.image.path)
             # print(self.image.path)
 
-
 class Label(Entity):
     name = models.CharField('name', max_length=255)
 
@@ -172,33 +171,16 @@ class Label(Entity):
     def __str__(self):
         return self.name
 
-
 class Vendor(Entity):
     name = models.CharField('name', max_length=255)
     image = models.ImageField('image', upload_to='vendor/')
     slug = models.SlugField('slug')
-
-    def __str__(self):
-        return self.name
-
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        img = Image.open(self.image.path)
-        if img.height > 500 or img.width > 500:
-            output_size = (500, 500)
-            img.thumbnail(output_size)
-            img.save(self.image.path)
-            # print(self.image.path)
-
 
 class City(Entity):
     name = models.CharField('city', max_length=255)
 
     def __str__(self):
         return self.name
-
 
 class Address(Entity):
     user = models.ForeignKey(User, verbose_name='user', related_name='address',
