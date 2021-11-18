@@ -208,6 +208,10 @@ class Address(Entity):
     address2 = models.CharField('address2', null=True, blank=True, max_length=255)
     city = models.ForeignKey('City', related_name='addresses', on_delete=models.CASCADE)
     phone = models.CharField('phone', max_length=255)
+    class Meta:
+        verbose_name_plural = 'Addresses'
+        verbose_name = 'Address'
 
     def __str__(self):
         return f'{self.user.first_name} - {self.address1} - {self.address2} - {self.phone}'
+

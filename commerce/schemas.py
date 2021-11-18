@@ -3,6 +3,8 @@ import datetime
 from ninja import Schema
 from pydantic import UUID4
 
+from commerce.models import Item
+
 
 
 class HumanQualities(Schema):
@@ -68,4 +70,18 @@ class ProductCreate(Schema):
 class AddToCartPayload(Schema):
     product_id: UUID4
     qty: int
+
+class CreateOrderPayload(Schema):
+    item_id: UUID4
+    address_id: UUID4
+    status: UUID4
+    total: int
+    note: str
+    ref_code: str
+    ordered: bool
+
+class CheckoutOrder(Schema):
+    ordered: bool
+
+
 

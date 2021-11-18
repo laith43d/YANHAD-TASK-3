@@ -6,14 +6,15 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 from pydantic import UUID4
 
-from commerce.models import Product, Item
-from commerce.schemas import ProductOut, ProductCreate, AddToCartPayload
+from commerce.models import Order, Product, Item
+from commerce.schemas import CheckoutOrder, CreateOrderPayload, ProductOut, ProductCreate, AddToCartPayload
 from config.utils.schemas import MessageOut
 
 User = get_user_model()
 
 commerce_controller = Router(tags=['products'])
 order_controller = Router(tags=['order'])
+address_controller = Router(tags=['address'])
 
 # @commerce_controller.get('products')
 # def list_products(request, id: int = None):
@@ -126,3 +127,44 @@ def increase_item_qty(request, item_id: UUID4):
 * Checkout
 
 '''
+
+# Decrease items qty
+@order_controller.post('decrease-item/{item_id}', response=MessageOut)
+def decrease_item_qty(request, item_id: UUID4):
+    item = get_object_or_404(Item, id=item_id, user=User.objects.first())
+    if item.item_qty==1:
+        item.delete()
+    else:
+        item.item_qty -= 1
+        item.save()
+
+    return 200, {'detail': 'Item qty decreased successfully!'}
+
+# Delete item from cart
+@order_controller.delete('item/{item_id}')
+def delete_item(request, item_id: UUID4):
+    item = get_object_or_404(Item, id=item_id)
+    item.delete()
+    return 200, {'detail': 'Item was removed successfully!'}
+
+# Create order
+@order_controller.post('create-order', response=MessageOut)
+def create(request, payload: CreateOrderPayload):
+
+    try:
+        order = Order.objects.create(**payload.dict(),user_id=get_user_model)
+        # order= Order.objects.create(item_id=payload.item_id,)
+        # item = Item.objects.get()
+    except:
+        return 400, {'detail': 'something went wrong!'}
+
+    return 200, {'detail': 'Order was created!'}
+
+# checkout_order
+@order_controller.put('checkout/{order_id}', response={200: CheckoutOrder, 404: MessageOut})
+def checkout_order(request, id, data: CheckoutOrder):
+    check = get_object_or_404(Order, id=id)
+    check.ordered=True
+    check.save()
+    return check
+
