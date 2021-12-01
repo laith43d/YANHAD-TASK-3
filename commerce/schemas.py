@@ -4,6 +4,69 @@ from ninja import Schema
 from pydantic import UUID4
 
 
+class CategoryOut(Schema):
+    id: UUID4
+    name: str
+    description: str
+    image: str
+
+
+class LabelOut(Schema):
+    id: UUID4
+    name: str
+
+
+class MerchantOut(Schema):
+    id: UUID4
+    name: str
+
+
+class VendorOut(Schema):
+    id: UUID4
+    name: str
+    image: str
+
+
+
+
+class CategoryIn(Schema):
+    name: str
+    description: str
+    image: str
+
+
+class LabelIn(Schema):
+    name: str
+
+
+class MerchantIn(Schema):
+    name: str
+
+
+class VendorIn(Schema):
+    name: str
+    image: str
+
+class AddressIn(Schema):
+    user: UUID4
+    work_address: bool
+    address1: str
+    address2: str
+    city: str
+    phone: str
+
+class AddressOut(Schema):
+    id: UUID4
+    user: UUID4
+    work_address: bool
+    address1: str
+    address2: str
+    city: str
+    phone: str
+
+
+
+
 
 class HumanQualities(Schema):
     age: int
@@ -68,4 +131,18 @@ class ProductCreate(Schema):
 class AddToCartPayload(Schema):
     product_id: UUID4
     qty: int
+
+class CreateOrder(Schema):
+    user_id: UUID4
+    address_id: UUID4
+    total: int
+    status: UUID4
+    note: str
+    ref_code: str
+    ordered: bool
+    item_id: UUID4
+
+class Checkout(Schema):
+    ordered: bool
+
 
