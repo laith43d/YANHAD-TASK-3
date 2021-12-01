@@ -110,6 +110,17 @@ def increase_item_qty(request, item_id: UUID4):
     return 200, {'detail': 'Item qty increased successfully!'}
 
 
+@order_controller.post('decrease-item/{item_id}', response=MessageOut)
+def decrease_item_qty(request, item_id: UUID4):
+    item = get_object_or_404(Item, id=item_id, user=User.objects.first())
+    item.item_qty -= 1
+    if item.item_qty == 0:
+        item.delete()
+    else:
+        item.save()
+    return 200, {'detail': 'Item qty decreased successfully!'}
+
+
 '''
 * Decrease items qty
 * Delete item from cart
