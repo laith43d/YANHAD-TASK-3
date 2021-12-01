@@ -87,3 +87,4 @@ def change_password(request, password_update_in: ChangePasswordSchema):
     user.set_password(password_update_in.new_password1)
     user.save()
     return {'detail': 'password updated successfully'}
+
