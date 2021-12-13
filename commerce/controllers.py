@@ -5,14 +5,16 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 from pydantic import UUID4
 
-from commerce.models import Product, Item
-from commerce.schemas import ProductOut, ProductCreate, AddToCartPayload
-from config.utils.schemas import MessageOut
+from account.authorization import GlobalAuth
+from commerce.models import Product, Label, Merchant, Vendor, Category, Item
+from commerce.schemas import ProductOut, ProductCreate, MessageOut, LabelOut, MerchantOut, CategoryOut, VendorOut, \
+    AddToCartPayload
 
 User = get_user_model()
 
 commerce_controller = Router(tags=['products'])
 order_controller = Router(tags=['order'])
+User = get_user_model()
 
 # @commerce_controller.get('products')
 # def list_products(request, id: int = None):
@@ -55,11 +57,11 @@ def list_products(request):
 def retrieve_product(request, id):
     return get_object_or_404(Product, id=id)
 
-
-@commerce_controller.post('products', response={
+@commerce_controller.post('products', auth=GlobalAuth(), response={
     201: ProductOut,
     400: MessageOut
 })
+
 def create_product(request, payload: ProductCreate):
     try:
         product = Product.objects.create(**payload.dict(), is_active=True)
@@ -68,6 +70,73 @@ def create_product(request, payload: ProductCreate):
 
     return 201, product
 
+@commerce_controller.put('product/{id}', auth=GlobalAuth(), )
+def update_employee(request, id, payload: ProductCreate):
+    product = get_object_or_404(Product, id=id)
+    for attr, value in payload.dict().items():
+        setattr(product, attr, value)
+    product.save()
+    return {"success": True}
+
+
+@commerce_controller.delete('product/{id}', auth=GlobalAuth(), )
+def delete_product(request, id):
+    product = get_object_or_404(Product, id=id)
+    product.delete()
+
+    return {"success": True}
+
+
+# create all crud operations for Label, Merchant, Vendor, Category
+
+@commerce_controller.get('Label', response={
+    200: List[LabelOut],
+})
+def list_label(request):
+    label = Label.objects.all()
+    # label = Label.filter(name='tshirt')
+    return label
+
+
+@commerce_controller.get('Label/{id}', response={
+    200: LabelOut
+})
+def retrieve_Label(request, id):
+    return get_object_or_404(Label, id=id)
+
+
+@commerce_controller.post('Label', auth=GlobalAuth(), response={
+    201: LabelOut,
+    400: MessageOut
+})
+def create_Label(request, payload: LabelOut):
+    try:
+        label = Label.objects.create(**payload.dict())
+    except:
+        return 400, {'detail': 'something wrong happened!'}
+
+    return 201, label
+
+
+@commerce_controller.put('Label/{id}', auth=GlobalAuth(), )
+def Label_employee(request, id, payload: LabelOut):
+    label = get_object_or_404(Label, id=id)
+    for attr, value in payload.dict().items():
+        setattr(label, attr, value)
+    label.save()
+    return {"success": True}
+
+
+@commerce_controller.delete('Label/{id}', auth=GlobalAuth(), )
+def delete_label(request, id):
+    label = get_object_or_404(Label, id=id)
+    label.delete()
+
+    return {"success": True}
+
+
+# bonus task
+# create all crud operations for Label, Merchant, Vendor, Category
 
 # @commerce_controller.put('product/{id}')
 # def update_product(request):
@@ -110,6 +179,17 @@ def increase_item_qty(request, item_id: UUID4):
     return 200, {'detail': 'Item qty increased successfully!'}
 
 
+
+@order_controller.post('decrease-item/{item_id}', auth=GlobalAuth(), response=MessageOut)
+def decrease_item_qty(request, item_id: UUID4):
+    user = get_object_or_404(User, id=request.auth['pk'])
+    item = get_object_or_404(Item, id=item_id, user=user)
+    item.item_qty -= 1
+    if item.item_qty == 0:
+        item.delete()
+    else:
+        item.save()
+    return 200, {'detail': 'Item qty decreased successfully!'}
 '''
 * Decrease items qty
 * Delete item from cart
