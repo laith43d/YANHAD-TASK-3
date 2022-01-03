@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from ninja import Router
 from pydantic import UUID4
 
+from account.authorization import GlobalAuth
 from commerce.models import Product, Item
 from commerce.schemas import ProductOut, ProductCreate, AddToCartPayload
 from config.utils.schemas import MessageOut
@@ -92,8 +93,9 @@ def create_product(request, payload: ProductCreate):
 
 
 
-@order_controller.post('add-to-cart', response=MessageOut)
+@order_controller.post('add-to-cart', response=MessageOut,auth=GlobalAuth())
 def add_to_cart(request, payload: AddToCartPayload):
+    user =get_object_or_404(User,user_id=request.auth['pk'])
     payload_validated = payload.copy()
     if payload.qty < 1:
         payload_validated.qty = 1
@@ -101,7 +103,7 @@ def add_to_cart(request, payload: AddToCartPayload):
     try:
         item = Item.objects.get(product_id=payload.product_id)
     except Item.DoesNotExist:
-        Item.objects.create(product_id=payload.product_id, user=User.objects.first(), item_qty=payload_validated.qty,
+        Item.objects.create(product_id=payload.product_id, user=user, item_qty=payload_validated.qty,
                             ordered=False)
         return 200, {'detail': 'item added to cart successfully!'}
 
@@ -110,13 +112,27 @@ def add_to_cart(request, payload: AddToCartPayload):
     return 200, {'detail': 'item qty updated successfully!'}
 
 
-@order_controller.post('increase-item/{item_id}', response=MessageOut)
+@order_controller.post('increase-item/{item_id}', response=MessageOut,auth=GlobalAuth())
 def increase_item_qty(request, item_id: UUID4):
-    item = get_object_or_404(Item, id=item_id, user=User.objects.first())
+    user = get_object_or_404(User, user_id=request.auth['pk'])
+    item = get_object_or_404(Item, id=item_id, user=user)
     item.item_qty += 1
     item.save()
 
     return 200, {'detail': 'Item qty increased successfully!'}
+
+@order_controller.post('decrease-item/{item_id}',response=MessageOut,auth=GlobalAuth())
+def decease_item_qty(request,item_id:UUID4):
+    user = get_object_or_404(User, user_id=request.auth['pk'])
+    item = get_object_or_404(Item, id=item_id, user=user)
+    if item.item_qty ==0:
+        item.delete()
+        return 200, {"derail": "item deleted"}
+    item.item_qty -=1
+    item.save()
+
+    return 200, {"detail": "item qty decrease successfully!"}
+
 
 
 '''
