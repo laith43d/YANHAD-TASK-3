@@ -1,10 +1,12 @@
 from typing import List
 
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from pydantic import UUID4
 
+from account.authorization import GlobalAuth
 from commerce.models import Product, Item
 from commerce.schemas import ProductOut, ProductCreate, AddToCartPayload
 from config.utils.schemas import MessageOut
@@ -43,9 +45,20 @@ order_controller = Router(tags=['order'])
 @commerce_controller.get('products', response={
     200: List[ProductOut],
 })
-def list_products(request):
+def list_products(request, q: str = None, price_lte: int = None, price_gte: int = None):
     products = Product.objects.all()
-    # products = products.filter(name='tshirt')
+
+    if q:
+        products = products.filter(
+            Q(name__icontains=q) | Q(description__icontains=q)
+        )
+
+    if price_lte:
+        products = products.filter(discounted_price__lte=price_lte)
+
+    if price_gte:
+        products = products.filter(discounted_price__gte=price_gte)
+
     return products
 
 
@@ -79,12 +92,10 @@ def create_product(request, payload: ProductCreate):
 #     pass
 
 
-# bonus task
-# create all crud operations for Label, Merchant, Vendor, Category
 
-
-@order_controller.post('add-to-cart', response=MessageOut)
+@order_controller.post('add-to-cart', response=MessageOut,auth=GlobalAuth())
 def add_to_cart(request, payload: AddToCartPayload):
+    user =get_object_or_404(User,user_id=request.auth['pk'])
     payload_validated = payload.copy()
     if payload.qty < 1:
         payload_validated.qty = 1
@@ -92,7 +103,7 @@ def add_to_cart(request, payload: AddToCartPayload):
     try:
         item = Item.objects.get(product_id=payload.product_id)
     except Item.DoesNotExist:
-        Item.objects.create(product_id=payload.product_id, user=User.objects.first(), item_qty=payload_validated.qty,
+        Item.objects.create(product_id=payload.product_id, user=user, item_qty=payload_validated.qty,
                             ordered=False)
         return 200, {'detail': 'item added to cart successfully!'}
 
@@ -101,13 +112,27 @@ def add_to_cart(request, payload: AddToCartPayload):
     return 200, {'detail': 'item qty updated successfully!'}
 
 
-@order_controller.post('increase-item/{item_id}', response=MessageOut)
+@order_controller.post('increase-item/{item_id}', response=MessageOut,auth=GlobalAuth())
 def increase_item_qty(request, item_id: UUID4):
-    item = get_object_or_404(Item, id=item_id, user=User.objects.first())
+    user = get_object_or_404(User, user_id=request.auth['pk'])
+    item = get_object_or_404(Item, id=item_id, user=user)
     item.item_qty += 1
     item.save()
 
     return 200, {'detail': 'Item qty increased successfully!'}
+
+@order_controller.post('decrease-item/{item_id}',response=MessageOut,auth=GlobalAuth())
+def decease_item_qty(request,item_id:UUID4):
+    user = get_object_or_404(User, user_id=request.auth['pk'])
+    item = get_object_or_404(Item, id=item_id, user=user)
+    if item.item_qty ==0:
+        item.delete()
+        return 200, {"derail": "item deleted"}
+    item.item_qty -=1
+    item.save()
+
+    return 200, {"detail": "item qty decrease successfully!"}
+
 
 
 '''
