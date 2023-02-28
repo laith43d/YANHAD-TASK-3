@@ -65,11 +65,9 @@ class Order(Entity):
 
     @property
     def order_total(self):
-        order_total = sum(
+        return sum(
             i.product.discounted_price * i.item_qty for i in self.items.all()
         )
-
-        return order_total
 
 
 class Item(Entity):
@@ -125,9 +123,7 @@ class Category(Entity):
     updated = models.DateTimeField(editable=False, auto_now=True)
 
     def __str__(self):
-        if self.parent:
-            return f'-   {self.name}'
-        return f'{self.name}'
+        return f'-   {self.name}' if self.parent else f'{self.name}'
 
     class Meta:
         verbose_name_plural = 'Categories'
